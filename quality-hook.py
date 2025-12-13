@@ -153,6 +153,28 @@ LINTERS = {
         'fix_commands': {
             'rustfmt': ['rustfmt']
         }
+    },
+    '.md': {
+        'primary': 'markdownlint',
+        'fallback': [],
+        'auto_fix': True,
+        'commands': {
+            'markdownlint': ['markdownlint', '--json']
+        },
+        'fix_commands': {
+            'markdownlint': ['markdownlint', '--fix']
+        }
+    },
+    '.mdx': {
+        'primary': 'markdownlint',
+        'fallback': [],
+        'auto_fix': True,
+        'commands': {
+            'markdownlint': ['markdownlint', '--json']
+        },
+        'fix_commands': {
+            'markdownlint': ['markdownlint', '--fix']
+        }
     }
 }
 
@@ -335,7 +357,27 @@ def parse_linter_output(linter: str, output: str, stderr: str) -> List[Dict[str,
     logger.debug(f"Raw output: {output[:500]}")  # First 500 chars
     
     try:
-        if linter in ['ruff', 'eslint', 'tslint', 'pylint', 'pyright']:
+        if linter == 'markdownlint':
+            # markdownlint JSON output format: {"filename": [{"lineNumber": 1, "ruleNames": ["MD001"], "ruleDescription": "...", "errorDetail": "..."}]}
+            if output.strip():
+                data = json.loads(output)
+                if isinstance(data, dict):
+                    for file_path, file_issues in data.items():
+                        if isinstance(file_issues, list):
+                            for issue in file_issues:
+                                rule_names = issue.get('ruleNames', [])
+                                rule = rule_names[0] if rule_names else ''
+                                message = issue.get('ruleDescription', '')
+                                if issue.get('errorDetail'):
+                                    message += f": {issue.get('errorDetail')}"
+                                issues.append({
+                                    'line': issue.get('lineNumber', 0),
+                                    'column': issue.get('errorRange', [1])[0] if issue.get('errorRange') else 1,
+                                    'severity': 'error',
+                                    'message': message,
+                                    'rule': rule
+                                })
+        elif linter in ['ruff', 'eslint', 'tslint', 'pylint', 'pyright']:
             # JSON output
             if output.strip():
                 data: Union[List[Dict[str, Any]], Dict[str, Any]] = json.loads(output)

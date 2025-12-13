@@ -121,11 +121,61 @@ else
     echo "ℹ️  Found existing $LINTER_CONFIG"
 fi
 
+# Install linters
+echo ""
+echo "📦 Installing linters..."
+
+# Detect OS
+IS_MACOS=false
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    IS_MACOS=true
+fi
+
+# Install ruff
+if command -v ruff &> /dev/null; then
+    echo "✓ ruff already installed"
+else
+    echo "Installing ruff..."
+    if $IS_MACOS && command -v brew &> /dev/null; then
+        brew install ruff
+    else
+        pip install ruff
+    fi
+fi
+
+# Install pyright
+if command -v pyright &> /dev/null; then
+    echo "✓ pyright already installed"
+else
+    echo "Installing pyright..."
+    npm install -g pyright
+fi
+
+# Install eslint
+if command -v eslint &> /dev/null; then
+    echo "✓ eslint already installed"
+else
+    echo "Installing eslint..."
+    npm install -g eslint
+fi
+
+# Install markdownlint
+if command -v markdownlint &> /dev/null; then
+    echo "✓ markdownlint already installed"
+else
+    echo "Installing markdownlint..."
+    npm install -g markdownlint-cli
+fi
+
 # Test the installation
 echo ""
 echo "🧪 Testing installation..."
-TEST_OUTPUT=$(echo '{"tool_name":"Edit","tool_input":{"file_path":"test.py"}}' | "$SCRIPT_DIR/quality-hook.py" 2>&1 || true)
-if [[ $TEST_OUTPUT == *"suppressOutput"* ]]; then
+# Create a temporary test file
+TEST_FILE=$(mktemp "${TMPDIR:-/tmp}/test_XXXXXX.py")
+echo "x = 1" > "$TEST_FILE"
+TEST_OUTPUT=$(echo "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$TEST_FILE\"}}" | "$SCRIPT_DIR/quality-hook.py" 2>&1 || true)
+rm -f "$TEST_FILE"
+if [[ $TEST_OUTPUT == *"passed"* ]] || [[ $TEST_OUTPUT == *"suppressOutput"* ]]; then
     echo "✅ Quality hook is working!"
 else
     echo "⚠️  Quality hook test produced unexpected output:"
@@ -137,8 +187,7 @@ echo "✨ Setup complete!"
 echo ""
 echo "Next steps:"
 echo "1. Edit $LINTER_CONFIG to customize linting rules"
-echo "2. Install required linters (ruff, eslint, etc.)"
-echo "3. Make a test edit with Claude Code to verify the hook works"
+echo "2. Make a test edit with Claude Code to verify the hook works"
 echo ""
 echo "Example configurations:"
 echo "  - Hook settings: $CLAUDE_DIR/settings.json.example"

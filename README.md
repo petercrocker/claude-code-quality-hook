@@ -41,6 +41,9 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 # Rust
 rustup component add clippy rustfmt
+
+# Markdown
+npm install -g markdownlint-cli
 ```
 
 ### 3. Test the Hook
@@ -127,6 +130,7 @@ See `.quality-hook.json.example` for all available options including:
 | TypeScript | eslint | ✅ | tslint |
 | Go | golangci-lint | ❌ | go vet, gofmt |
 | Rust | cargo clippy | ❌ | rustfmt (✅) |
+| Markdown | markdownlint | ✅ | - |
 
 ## Advanced Features
 
